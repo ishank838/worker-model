@@ -4,90 +4,43 @@ import (
 	"log"
 	"net/http"
 	"runtime"
-	"sync"
 	"time"
 
-	_ "github.com/jackdanger/collectlinks"
+	"crawler/worker"
 )
 
 const (
-	WorkerCount   = 30
+	WorkerCount   = 60
 	TaskQueueSize = 5000
 )
 
 // Worker
 func main() {
-	runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(1)
 
 	now := time.Now()
-	baseURL := "https://www.jmit.ac.in/" //"https://google.com"
+	baseURL := "https://www.jmit.ac.in/"
 
-	workerChan := make(chan struct{}, WorkerCount)
-	taskChan := make(chan string, TaskQueueSize)
-	wg := sync.WaitGroup{}
-	//parsedLinks := map[string]bool{}
-	//outputChan := make(chan string, TaskQueueSize)
+	worker := worker.NewWorkers(WorkerCount, TaskQueueSize)
 
-	for i := 0; i < WorkerCount; i++ {
-		go func() {
-			for task := range taskChan {
-				workerChan <- struct{}{}
-				func() {
-					defer func() {
-						log.Println("done", task)
-						wg.Done()
-					}()
+	worker.Start()
 
-					// if parsedLinks[task] {
-					// 	return
-					// }
-					// parsedLinks[task] = true
-
-					//log.Println("processing", task)
-
-					resp, err := http.Get(task)
-					if err != nil {
-						log.Println("[ERROR]", err)
-						return
-					}
-					defer resp.Body.Close()
-
-					if resp.StatusCode != 200 {
-						return
-					}
-
-					// links := collectlinks.All(resp.Body)
-					// for _, link := range links {
-					// 	log.Println("add", link)
-					// 	wg.Add(1)
-					// 	taskChan <- link
-					// }
-				}()
-				<-workerChan
-			}
-		}()
-	}
-
-	//log.Println("add", baseURL)
 	for i := 0; i < 1000; i++ {
-		wg.Add(1)
-		taskChan <- baseURL
+		worker.AddJob(URLJOb{
+			url: baseURL,
+		})
 	}
 
-	go func() {
-		for range time.NewTicker(1 * time.Second).C {
-			log.Println("Stats", len(workerChan), len(taskChan))
-		}
-	}()
-
-	wg.Wait()
+	worker.Stop()
 
 	log.Println(time.Since(now))
-	// select {
-	// case result, open := <-outputChan:
-	// 	if !open {
-	// 		return
-	// 	}
-	// 	log.Println(result)
-	// }
+}
+
+type URLJOb struct {
+	url string
+}
+
+func (u URLJOb) Process() {
+	http.Get(u.url)
+	log.Println(u.url)
 }
