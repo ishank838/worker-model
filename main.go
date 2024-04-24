@@ -2,21 +2,18 @@ package main
 
 import (
 	"log"
-	"net/http"
-	"runtime"
 	"time"
 
 	"crawler/worker"
 )
 
 const (
-	WorkerCount   = 60
+	WorkerCount   = 120
 	TaskQueueSize = 5000
 )
 
 // Worker
 func main() {
-	runtime.GOMAXPROCS(1)
 
 	now := time.Now()
 	baseURL := "https://www.jmit.ac.in/"
@@ -41,6 +38,5 @@ type URLJOb struct {
 }
 
 func (u URLJOb) Process() {
-	http.Get(u.url)
-	log.Println(u.url)
+	time.Sleep(5 * time.Second)
 }
