@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"crawler/worker"
+	"worker-model/worker"
 )
 
 const (
